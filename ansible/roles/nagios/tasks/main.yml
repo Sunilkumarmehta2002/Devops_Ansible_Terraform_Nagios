@@ -35,6 +35,6 @@
   copy:
     dest: /etc/nagios/nrpe.cfg
     content: |
-      allowed_hosts=127.0.0.1,{{ hostvars['web'].ansible_host }},{{ hostvars['api'].ansible_host }}
-      command[check_http]=/usr/lib/nagios/plugins/check_http -I {{ hostvars['web'].ansible_host }} -p 80
-      command[check_api]=/usr/lib/nagios/plugins/check_tcp -H {{ hostvars['api'].ansible_host }} -p {{ api_port }}
+      allowed_hosts=127.0.0.1,{{ hostvars['web-server'].ansible_host }},{{ hostvars['api-server'].ansible_host }}
+      command[check_http]=/usr/lib/nagios/plugins/check_http -I {{ hostvars['web-server'].ansible_host }} -p 80
+      command[check_api]=/usr/lib/nagios/plugins/check_tcp -H {{ hostvars['api-server'].ansible_host }} -p {{ api_port }}

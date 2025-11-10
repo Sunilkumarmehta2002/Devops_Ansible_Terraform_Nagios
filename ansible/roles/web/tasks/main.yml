@@ -62,5 +62,3 @@
     src: nginx_provertos.conf.j2
     dest: /etc/nginx/conf.d/provertos.conf
   notify: Reload nginx
-
----
