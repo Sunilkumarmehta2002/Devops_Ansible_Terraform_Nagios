@@ -52,6 +52,11 @@ jobs:
           ansible_python_interpreter=/usr/bin/python3
           INV
 
+      - name: Show generated inventory (for debugging)
+        run: |
+          echo "--- ansible/inventory.ini ---"
+          cat ansible/inventory.ini
+
       - name: Write MONGODB_URI into group_vars
         run: |
           mkdir -p ansible/group_vars
