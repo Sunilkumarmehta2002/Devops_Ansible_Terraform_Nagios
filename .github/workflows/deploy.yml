@@ -19,13 +19,13 @@ jobs:
       - name: Build client
         working-directory: ./client
         run: |
-          npm ci --silent
-          npm run build --silent
+          npm ci
+          npm run build
 
       - name: Build API (install deps)
         working-directory: ./api
         run: |
-          npm ci --silent || true
+          npm ci || true
 
       - name: Run tests (if any)
         run: |
