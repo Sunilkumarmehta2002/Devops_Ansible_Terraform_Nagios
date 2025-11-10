@@ -1,0 +1,14 @@
+module.exports = {
+  apps : [
+    {
+      name: 'provertos-api',
+      cwd: '{{ deploy_dir }}/api',
+      script: 'index.js',
+      env: {
+        PORT: '{{ api_port }}',
+        MONGODB_URI: '{{ mongodb_uri }}',
+        CORS_ORIGIN: '{{ cors_origin | default("http://localhost:5173") }}'
+      }
+    }
+  ]
+};

@@ -1,0 +1,92 @@
+name: CI/CD Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Build client
+        working-directory: ./client
+        run: |
+          npm ci --silent
+          npm run build --silent
+
+      - name: Build API (install deps)
+        working-directory: ./api
+        run: |
+          npm ci --silent || true
+
+      - name: Run tests (if any)
+        run: |
+          echo "No tests defined; skipping" || true
+
+      - name: Install Ansible
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Prepare inventory from secrets
+        run: |
+          cat > ansible/inventory.ini <<'INV'
+          [web]
+          web ansible_host=${{ secrets.EC2_WEB_IP }} ansible_user=ec2-user
+
+          [api]
+          api ansible_host=${{ secrets.EC2_API_IP }} ansible_user=ec2-user
+
+          [nagios]
+          nagios ansible_host=${{ secrets.EC2_NAGIOS_IP }} ansible_user=ec2-user
+
+          [all:vars]
+          ansible_python_interpreter=/usr/bin/python3
+          INV
+
+      - name: Write MONGODB_URI into group_vars
+        run: |
+          mkdir -p ansible/group_vars
+          cat > ansible/group_vars/all.yml <<'YML'
+          ansible_become: true
+          node_version: "18.x"
+          app_user: provertos
+          deploy_dir: /opt/provertos
+          react_build_dir: /opt/provertos/client/build
+          api_port: 3001
+          mongodb_uri: "${{ secrets.MONGODB_URI }}"
+          cors_origin: "http://${{ secrets.EC2_WEB_IP }}"
+          YML
+
+      - name: Add SSH key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/provertos_key
+          chmod 600 /tmp/provertos_key
+
+      - name: Ensure known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.EC2_WEB_IP }} >> ~/.ssh/known_hosts || true
+          ssh-keyscan -H ${{ secrets.EC2_API_IP }} >> ~/.ssh/known_hosts || true
+          ssh-keyscan -H ${{ secrets.EC2_NAGIOS_IP }} >> ~/.ssh/known_hosts || true
+
+      - name: Run Ansible deploy
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: 'False'
+        run: |
+          ANSIBLE_PRIVATE_KEY_FILE=/tmp/provertos_key ansible-playbook -i ansible/inventory.ini ansible/deploy.yml --ssh-extra-args='-o StrictHostKeyChecking=no'
+
+      - name: Verify web health
+        run: |
+          curl -fsS --max-time 10 http://${{ secrets.EC2_WEB_IP }}/ || (echo 'Web check failed' && exit 1)
+
+      - name: Verify api health
+        run: |
+          curl -fsS --max-time 10 http://${{ secrets.EC2_API_IP }}:3001/healthz || echo 'API health endpoint missing or failed'

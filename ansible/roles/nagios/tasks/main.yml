@@ -1,0 +1,40 @@
+---
+# Minimal Nagios Core install on Debian/Ubuntu (for demo). Amazon Linux setup may differ.
+- name: Install prerequisites (Debian)
+  apt:
+    name: [apache2, php, libapache2-mod-php, make, unzip]
+    state: present
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Download and install Nagios Core (simple flow)
+  block:
+    - name: Download nagios core tarball
+      get_url:
+        url: https://assets.nagios.com/downloads/nagioscore/releases/nagios-4.4.6.tar.gz
+        dest: /tmp/nagios.tar.gz
+
+    - name: Extract
+      unarchive:
+        src: /tmp/nagios.tar.gz
+        dest: /tmp/
+        remote_src: yes
+
+    - name: Create nagios user and group
+      user:
+        name: nagios
+        create_home: yes
+
+    - name: Ensure httpd (apache2) is running
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Create simple NRPE check config for remote checks
+  copy:
+    dest: /etc/nagios/nrpe.cfg
+    content: |
+      allowed_hosts=127.0.0.1,{{ hostvars['web'].ansible_host }},{{ hostvars['api'].ansible_host }}
+      command[check_http]=/usr/lib/nagios/plugins/check_http -I {{ hostvars['web'].ansible_host }} -p 80
+      command[check_api]=/usr/lib/nagios/plugins/check_tcp -H {{ hostvars['api'].ansible_host }} -p {{ api_port }}

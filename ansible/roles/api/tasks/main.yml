@@ -1,0 +1,65 @@
+---
+# Install Node, PM2, clone API, install deps and run with PM2
+- name: Ensure Node.js setup script is present (RedHat)
+  get_url:
+    url: "https://rpm.nodesource.com/setup_18.x"
+    dest: /tmp/setup_node.sh
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Run Node.js setup script (RedHat)
+  command: bash /tmp/setup_node.sh
+  args:
+    creates: /usr/bin/node
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Install nodejs (RedHat)
+  yum:
+    name: nodejs
+    state: present
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Install nodejs (Debian)
+  apt:
+    name: nodejs
+    state: present
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Ensure npm is present
+  package:
+    name: npm
+    state: present
+
+- name: Install pm2 globally
+  npm:
+    name: pm2
+    global: yes
+
+- name: Sync API code from control node to target
+  synchronize:
+    src: "{{ playbook_dir }}/../api/"
+    dest: "{{ deploy_dir }}/api/"
+    delete: yes
+    recursive: yes
+  delegate_to: localhost
+
+- name: Install API dependencies on remote
+  shell: |
+    cd {{ deploy_dir }}/api
+    npm ci --silent
+  args:
+    chdir: "{{ deploy_dir }}/api"
+  become_user: "{{ app_user }}"
+
+- name: Upload PM2 ecosystem file
+  template:
+    src: ecosystem.config.js.j2
+    dest: "{{ deploy_dir }}/api/ecosystem.config.js"
+  notify: Restart pm2
+
+- name: Ensure pm2 process is started
+  become: yes
+  become_user: "{{ app_user }}"
+  shell: |
+    export HOME=/home/{{ app_user }}
+    cd {{ deploy_dir }}/api
+    pm2 startOrReload ecosystem.config.js

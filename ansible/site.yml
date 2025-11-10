@@ -1,0 +1,25 @@
+---
+- name: Apply base and app roles to all hosts
+  hosts: all
+  become: yes
+  vars_files: []
+  roles:
+    - common
+
+- name: Configure web server and deploy React
+  hosts: web
+  become: yes
+  roles:
+    - web
+
+- name: Configure API server and deploy API
+  hosts: api
+  become: yes
+  roles:
+    - api
+
+- name: Configure Nagios server
+  hosts: nagios
+  become: yes
+  roles:
+    - nagios

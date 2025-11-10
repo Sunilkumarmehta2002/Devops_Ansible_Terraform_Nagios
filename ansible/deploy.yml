@@ -1,0 +1,8 @@
+---
+- name: Deploy app only (web + api)
+  hosts: web,api
+  become: yes
+  roles:
+    - common
+    - web
+    - api

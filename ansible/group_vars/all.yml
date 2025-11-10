@@ -1,0 +1,8 @@
+---
+ansible_become: true
+node_version: "18.x"
+app_user: provertos
+deploy_dir: /opt/provertos
+react_build_dir: /opt/provertos/client/build
+api_port: 3001
+mongodb_uri: "${MONGODB_URI}"

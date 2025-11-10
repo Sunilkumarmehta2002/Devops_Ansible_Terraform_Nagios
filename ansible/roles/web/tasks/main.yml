@@ -1,0 +1,66 @@
+---
+# Install Nginx, Node (for building React), pull repo and build the client
+- name: Install nginx (Debian)
+  apt:
+    name: nginx
+    state: present
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Install nginx (RedHat/Amazon)
+  yum:
+    name: nginx
+    state: present
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Ensure Node.js setup script is present
+  get_url:
+    url: "https://rpm.nodesource.com/setup_18.x"
+    dest: /tmp/setup_node.sh
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Run Node.js setup script (RedHat)
+  command: bash /tmp/setup_node.sh
+  args:
+    creates: /usr/bin/node
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Install Node.js (RedHat)
+  yum:
+    name: nodejs
+    state: present
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Install Node.js (Debian)
+  apt:
+    name: nodejs
+    state: present
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Ensure npm is present
+  package:
+    name: npm
+    state: present
+
+- name: Ensure nginx html root exists
+  file:
+    path: /var/www/html
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy build from control node to nginx html root
+  synchronize:
+    src: "{{ playbook_dir }}/../client/build/"
+    dest: /var/www/html/
+    delete: yes
+    recursive: yes
+  delegate_to: localhost
+
+- name: Upload nginx conf
+  template:
+    src: nginx_provertos.conf.j2
+    dest: /etc/nginx/conf.d/provertos.conf
+  notify: Reload nginx
+
+---

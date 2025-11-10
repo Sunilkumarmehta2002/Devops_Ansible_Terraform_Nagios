@@ -1,0 +1,30 @@
+---
+# common tasks: update, install base pkgs, create app user
+- name: Ensure apt cache is up to date (Debian/Ubuntu)
+  apt:
+    update_cache: yes
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Ensure yum cache is up to date (RedHat/Amazon)
+  yum:
+    name: yum
+    state: latest
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Ensure base packages are installed
+  package:
+    name: [git, curl, unzip, python3, python3-venv]
+    state: present
+
+- name: Create app user
+  user:
+    name: "{{ app_user }}"
+    system: false
+    create_home: yes
+
+- name: Create deploy dir
+  file:
+    path: "{{ deploy_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    mode: '0755'
