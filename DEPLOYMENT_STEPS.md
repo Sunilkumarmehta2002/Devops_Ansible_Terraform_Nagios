@@ -1,0 +1,237 @@
+# Pro-vertos Deployment Steps
+
+## Current Status
+❌ **Cannot run Ansible deployment yet** - No EC2 instances exist
+
+The error you're seeing is because the inventory file has placeholder IPs:
+```
+ansible_host=__EC2_WEB_IP__  ← This needs to be a real IP address
+```
+
+## 🚀 Complete Deployment Process
+
+### Step 1: Deploy AWS Infrastructure with Terraform
+
+#### 1.1 Configure Terraform Variables
+```powershell
+cd infra
+```
+
+Check if `terraform.tfvars` exists:
+```powershell
+ls terraform.tfvars
+```
+
+If not, copy from example:
+```powershell
+cp terraform.tfvars.example terraform.tfvars
+```
+
+#### 1.2 Edit terraform.tfvars
+Open `infra/terraform.tfvars` and configure:
+```hcl
+aws_region = "us-east-1"
+key_name = "your-aws-key-pair-name"
+# Add other required variables
+```
+
+#### 1.3 Deploy Infrastructure
+```powershell
+# Initialize Terraform
+terraform init
+
+# Preview changes
+terraform plan
+
+# Deploy (will create EC2 instances)
+terraform apply
+```
+
+#### 1.4 Note the Output IPs
+After `terraform apply` completes, you'll see output like:
+```
+Outputs:
+
+api_server_ip = "54.123.45.67"
+web_server_ip = "54.123.45.68"
+nagios_server_ip = "54.123.45.69"
+```
+
+**SAVE THESE IPs!** You'll need them for the next steps.
+
+---
+
+### Step 2: Update Ansible Inventory (Local Testing)
+
+If you want to test Ansible deployment locally, update the inventory:
+
+```powershell
+cd ..
+notepad ansible\inventory.ini
+```
+
+Replace placeholders with real IPs:
+```ini
+[web]
+web-server ansible_host=54.123.45.68 ansible_user=ec2-user
+
+[api]
+api-server ansible_host=54.123.45.67 ansible_user=ec2-user
+
+[nagios]
+nagios-server ansible_host=54.123.45.69 ansible_user=ec2-user
+```
+
+---
+
+### Step 3: Configure GitHub Secrets (For CI/CD)
+
+Go to your GitHub repository:
+1. Settings → Secrets and variables → Actions
+2. Add the following secrets:
+
+| Secret Name | Value | Example |
+|-------------|-------|---------|
+| `EC2_WEB_IP` | Web server IP | `54.123.45.68` |
+| `EC2_API_IP` | API server IP | `54.123.45.67` |
+| `EC2_NAGIOS_IP` | Nagios server IP | `54.123.45.69` |
+| `SSH_PRIVATE_KEY` | Your AWS private key | Contents of `.pem` file |
+| `MONGODB_URI` | MongoDB connection string | `mongodb://...` |
+
+---
+
+### Step 4: Deploy via CI/CD
+
+Once GitHub secrets are configured:
+
+```powershell
+git add .
+git commit -m "Ready for deployment"
+git push origin main
+```
+
+The GitHub Actions workflow will automatically:
+1. ✅ Build the client
+2. ✅ Install API dependencies
+3. ✅ Deploy to EC2 using Ansible
+4. ✅ Verify deployment
+
+---
+
+## 🧪 Alternative: Test with Local/Mock Servers
+
+If you want to test Ansible without AWS:
+
+### Option A: Use Localhost
+```ini
+[web]
+web-server ansible_host=localhost ansible_connection=local
+
+[api]
+api-server ansible_host=localhost ansible_connection=local
+```
+
+### Option B: Use Docker Containers
+Create test containers that simulate EC2 instances.
+
+---
+
+## 📋 Pre-Deployment Checklist
+
+Before deploying to AWS, ensure you have:
+
+- [ ] AWS account with appropriate permissions
+- [ ] AWS CLI configured (`aws configure`)
+- [ ] SSH key pair created in AWS EC2
+- [ ] MongoDB instance (Atlas or self-hosted)
+- [ ] Domain name (optional, for production)
+- [ ] Terraform installed (`terraform --version`)
+- [ ] Ansible installed (for local testing)
+
+---
+
+## 🔍 Troubleshooting
+
+### "Could not resolve hostname"
+**Cause**: Inventory has placeholder IPs (`__EC2_WEB_IP__`)
+**Solution**: Deploy infrastructure first, then update inventory
+
+### "Permission denied (publickey)"
+**Cause**: SSH key not configured correctly
+**Solution**: 
+- Ensure SSH key has correct permissions: `chmod 600 your-key.pem`
+- Verify key matches the one used in Terraform
+
+### "Connection timed out"
+**Cause**: Security group doesn't allow SSH
+**Solution**: Check AWS security group allows port 22 from your IP
+
+### Terraform Errors
+**Cause**: Missing AWS credentials or permissions
+**Solution**: 
+- Run `aws configure`
+- Verify IAM user has EC2 permissions
+
+---
+
+## 🎯 Quick Start Summary
+
+**For AWS Deployment:**
+```powershell
+# 1. Deploy infrastructure
+cd infra
+terraform init
+terraform apply
+
+# 2. Note the IPs from output
+
+# 3. Configure GitHub secrets with the IPs
+
+# 4. Push to trigger deployment
+git push origin main
+```
+
+**For Local Testing:**
+```powershell
+# 1. Test build locally
+.\test.ps1
+
+# 2. Start services
+cd api && npm start          # Terminal 1
+cd client && npm run dev     # Terminal 2
+```
+
+---
+
+## 📚 Related Documentation
+
+- `README.md` - Project overview
+- `TESTING_GUIDE.md` - Local testing guide
+- `scripts/README.md` - Scripts documentation
+- `infra/terraform.tfvars.example` - Terraform configuration example
+
+---
+
+## ⚠️ Important Notes
+
+1. **Don't commit real IPs**: The `ansible/inventory.ini` file with real IPs should not be committed to Git (it's generated by CI/CD)
+
+2. **SSH Keys**: Never commit SSH private keys to Git. Use GitHub Secrets for CI/CD.
+
+3. **Costs**: Running EC2 instances will incur AWS charges. Remember to destroy resources when done:
+   ```powershell
+   cd infra
+   terraform destroy
+   ```
+
+4. **Security**: Update security groups to restrict SSH access to your IP only.
+
+---
+
+## 🎉 Next Steps
+
+1. **Now**: Deploy infrastructure with Terraform
+2. **Then**: Configure GitHub secrets
+3. **Finally**: Push to main branch to trigger automated deployment
+
+Once infrastructure is deployed, the CI/CD pipeline will handle everything automatically!
