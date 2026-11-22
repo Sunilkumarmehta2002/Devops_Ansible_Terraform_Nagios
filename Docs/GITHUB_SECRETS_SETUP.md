@@ -205,12 +205,12 @@ MIIEpAIBAAKCAQEAx7...
 4. Driver: **Node.js**, Version: **4.1 or later**
 5. Copy the connection string, it looks like:
    ```
-   mongodb+srv://provertos_user:<password>@provertos-cluster.xxxxx.mongodb.net/?retryWrites=true&w=majority
+   mongodb+srv://<username>:<ROTATED_PASSWORD>@<cluster-host>/<database>?retryWrites=true&w=majority
    ```
 6. **IMPORTANT**: Replace `<password>` with the password you copied earlier
 7. Add database name at the end:
    ```
-   mongodb+srv://provertos_user:YourPassword123@provertos-cluster.xxxxx.mongodb.net/provertos?retryWrites=true&w=majority
+   mongodb+srv://<username>:<ROTATED_PASSWORD>@<cluster-host>/<database>?retryWrites=true&w=majority
    ```
 
 **SAVE THIS** - This is your `MONGODB_URI`!
