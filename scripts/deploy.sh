@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# export EC2_WEB_IP=44.211.50.228 EC2_API_IP=44.193.199.94 EC2_NAGIOS_IP=3.236.127.159 SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa)" MONGODB_URI="mongodb+srv://Devops:Super%403000@cluster0.y2ac2hf.mongodb.net/provertos?retryWrites=true&w=majority"
+# export EC2_WEB_IP=44.211.50.228 EC2_API_IP=44.193.199.94 EC2_NAGIOS_IP=3.236.127.159 SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa)" MONGODB_URI="mongodb+srv://<username>:<ROTATED_PASSWORD>@<cluster-host>/<database>?retryWrites=true&w=majority"
 # then: ./scripts/deploy.sh
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
