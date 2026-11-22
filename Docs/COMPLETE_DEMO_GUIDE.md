@@ -261,7 +261,7 @@ web_public_ip = "54.123.45.69"
 4. **Network Access**: Allow 0.0.0.0/0
 5. **Get Connection String**:
    ```
-   mongodb+srv://provertos_user:PASSWORD@cluster.xxxxx.mongodb.net/provertos?retryWrites=true&w=majority
+   mongodb+srv://<username>:<ROTATED_PASSWORD>@<cluster-host>/<database>?retryWrites=true&w=majority
    ```
 
 ---
